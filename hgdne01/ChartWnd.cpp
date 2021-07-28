@@ -20,18 +20,27 @@ std::vector<OHLCV> ___data;
 //-----------------------------------------------------------------------------
 
 static
-double ___windowChartRatio = 0;
-
-static
 double ___minPrice = 0;
 
 static
-long ___windowHeigh = 0;
+double ___chartHeight = 0;
+
+static
+double ___windowChartRatio = 0;
+
+static
+long ___windowHeight = 0;
+
+static
+long ___leftOffset = 0;
+
+static
+long ___dataWidth = 0;
 
 //-----------------------------------------------------------------------------
 
 static
-void DrawCandle(HDC hdc, HBRUSH hbr, const long centerX, const double openPrice, const double highPrice, const double lowPrice, const double closePrice)
+void DrawCandle(HDC hdc, HBRUSH hbr, const long leftX, const double openPrice, const double highPrice, const double lowPrice, const double closePrice)
 {
     const double candleHigh = (highPrice - ___minPrice) * ___windowChartRatio;
     const double candleLow  = ( lowPrice - ___minPrice) * ___windowChartRatio;
@@ -42,8 +51,8 @@ void DrawCandle(HDC hdc, HBRUSH hbr, const long centerX, const double openPrice,
     const long candleHighL = (long)candleHighR;
     const long candleLowL  = (long)candleLowR ;
 
-    const long candleHighL2 = ___windowHeigh - candleHighL;
-    const long candleLowL2  = ___windowHeigh - candleLowL;
+    const long candleHighL2 = ___windowHeight - candleHighL;
+    const long candleLowL2  = ___windowHeight - candleLowL;
 
     //-------------------------------------------------------------------------
 
@@ -56,8 +65,8 @@ void DrawCandle(HDC hdc, HBRUSH hbr, const long centerX, const double openPrice,
     const long candleOpenL  = (long)candleOpenR;
     const long candleCloseL = (long)candleCloseR;
 
-    const long candleOpenL2 = ___windowHeigh - candleOpenL;
-    const long candleCloseL2 = ___windowHeigh - candleCloseL;
+    const long candleOpenL2 = ___windowHeight - candleOpenL;
+    const long candleCloseL2 = ___windowHeight - candleCloseL;
 
     //-------------------------------------------------------------------------
 
@@ -66,8 +75,8 @@ void DrawCandle(HDC hdc, HBRUSH hbr, const long centerX, const double openPrice,
         const long rcTop    = candleOpenL2;
         const long rcBottom = candleCloseL2;
 
-        const long rcLeft = centerX - 5;
-        const long rcRight = centerX + 5 + 1;
+        const long rcLeft = leftX;
+        const long rcRight = leftX + 10 + 1;
 
         const RECT rc{ rcLeft, rcTop, rcRight, rcBottom };
         const int e = FrameRect(hdc, &rc, hbr);
@@ -75,18 +84,18 @@ void DrawCandle(HDC hdc, HBRUSH hbr, const long centerX, const double openPrice,
 
         //---------------------------------------------------------------------
 
-        BOOL b = MoveToEx(hdc, centerX, candleOpenL2, nullptr);
+        BOOL b = MoveToEx(hdc, leftX + 5, candleOpenL2, nullptr);
         _ASSERT(b);
 
-        b = LineTo(hdc, centerX, candleHighL2);
+        b = LineTo(hdc, leftX + 5, candleHighL2);
         _ASSERT(b);
 
         //---------------------------------------------------------------------
 
-        b = MoveToEx(hdc, centerX, candleCloseL2, nullptr);
+        b = MoveToEx(hdc, leftX + 5, candleCloseL2, nullptr);
         _ASSERT(b);
 
-        b = LineTo(hdc, centerX, candleLowL2);
+        b = LineTo(hdc, leftX + 5, candleLowL2);
         _ASSERT(b);
     }
     else
@@ -94,8 +103,8 @@ void DrawCandle(HDC hdc, HBRUSH hbr, const long centerX, const double openPrice,
         const long rcTop = candleCloseL2;
         const long rcBottom = candleOpenL2 + 1;
 
-        const long rcLeft = centerX - 5;
-        const long rcRight = centerX + 5 + 1;
+        const long rcLeft = leftX;
+        const long rcRight = leftX + 10 + 1;
 
         //---------------------------------------------------------------------
 
@@ -103,18 +112,18 @@ void DrawCandle(HDC hdc, HBRUSH hbr, const long centerX, const double openPrice,
         const int e = FillRect(hdc, &rc, hbr);
         _ASSERT(0 != e);
 
-        BOOL b = MoveToEx(hdc, centerX, candleCloseL2, nullptr);
+        BOOL b = MoveToEx(hdc, leftX + 5, candleCloseL2, nullptr);
         _ASSERT(b);
 
-        b = LineTo(hdc, centerX, candleHighL2);
+        b = LineTo(hdc, leftX + 5, candleHighL2);
         _ASSERT(b);
 
         //---------------------------------------------------------------------
 
-        b = MoveToEx(hdc, centerX, candleOpenL2, nullptr);
+        b = MoveToEx(hdc, leftX + 5, candleOpenL2, nullptr);
         _ASSERT(b);
 
-        b = LineTo(hdc, centerX, candleLowL2);
+        b = LineTo(hdc, leftX + 5, candleLowL2);
         _ASSERT(b);
     }
 }
@@ -128,8 +137,21 @@ void ChartWnd_OnPaint(HDC hdc)
 
     for(size_t i = 0; i < ___data.size(); i++)
     {
-        DrawCandle(hdc, hbr, (i + 1) * 15, ___data[i].open, ___data[i].high, ___data[i].low, ___data[i].close);
+        DrawCandle(hdc, hbr, i * 15 - ___leftOffset, ___data[i].open, ___data[i].high, ___data[i].low, ___data[i].close);
     }
+
+    //-------------------------------------------------------------------------
+
+    RECT rc{};
+    rc.left = 15 - ___leftOffset;
+    rc.top = 15;
+    rc.right = ___dataWidth + 1 - ___leftOffset;
+    rc.bottom = ___windowHeight - 0;
+
+    int e = FrameRect(hdc, &rc, hbr);
+    _ASSERT(0 != e);
+
+    //-------------------------------------------------------------------------
 }
 
 //-----------------------------------------------------------------------------
@@ -154,6 +176,8 @@ void ReadHstData()
 
     //-------------------------------------------------------------------------
 
+#define CANDLES_TO_READ 200
+
     if(400 == h.version)
     {
         HST_RECORD_400 r;
@@ -168,6 +192,9 @@ void ReadHstData()
             };
 
             ___data.push_back(ohlcv);
+
+            if(___data.size() == CANDLES_TO_READ)
+                break;
         }
     }
     else
@@ -184,6 +211,9 @@ void ReadHstData()
             };
 
             ___data.push_back(ohlcv);
+
+            if(___data.size() == CANDLES_TO_READ)
+                break;
         }
     }
 
@@ -223,14 +253,17 @@ void PrepareData()
 
     GetDataMinMaxPrice(___minPrice, maxPrice);
 
-    double chartWidth = maxPrice - ___minPrice;
+    ___chartHeight = maxPrice - ___minPrice;
 
     RECT rcClient;
     GetClientRect(___hwndMe, &rcClient);
 
-    ___windowHeigh = rcClient.bottom - rcClient.top;
+    ___windowHeight = rcClient.bottom - rcClient.top;
 
-    ___windowChartRatio = ___windowHeigh / chartWidth;
+    ___windowChartRatio = ___windowHeight / ___chartHeight;
+
+    size_t dataSize = ___data.size();
+    ___dataWidth = dataSize * 15;
 }
 
 //-----------------------------------------------------------------------------
@@ -245,7 +278,133 @@ BOOL ChartWnd_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
 
     //-------------------------------------------------------------------------
 
+    SCROLLINFO si{};
+    si.cbSize = sizeof(SCROLLINFO);
+    si.fMask |= SIF_RANGE;
+    si.nMin = 0;
+    si.nMax = ___dataWidth;
+    si.fMask |= SIF_POS;
+    si.nPos = 0;
+
+    SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+
+    //-------------------------------------------------------------------------
+
     return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+#define RECTWIDTH(r) (r.right-r.left)
+#define RECTHEIGT(r) (r.bottom-r.top)
+
+static
+void ChartWnd_OnSize(HWND hwnd, UINT state, int cx, int cy)
+{
+    RECT rc{};
+    BOOL b = GetClientRect(hwnd, &rc);
+    _ASSERT(b);
+
+    const long rcWidth = RECTWIDTH(rc);
+    const long rcHeight = RECTHEIGT(rc);
+
+    ___windowHeight = rcHeight;
+    ___windowChartRatio = ___windowHeight / ___chartHeight;
+
+    //OutputDebugString(L"ChartWnd_OnSize\n");
+
+    SCROLLINFO si{};
+    si.cbSize = sizeof(SCROLLINFO);
+    si.fMask = SIF_PAGE;
+    si.nPage = rcWidth;
+
+    SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+}
+
+//-----------------------------------------------------------------------------
+
+static
+void ChartWnd_OnHScroll_LineRight(HWND hwnd)
+{
+    RECT rc{};
+    BOOL b = GetClientRect(hwnd, &rc);
+    _ASSERT(b);
+
+    const long rcWidth = RECTWIDTH(rc);
+    const long leftOffset = ___leftOffset;
+    const long dataWidth = ___dataWidth;
+    const long x = leftOffset + rcWidth;
+
+    if(x >= dataWidth)
+    {
+        return;
+    }
+
+    ___leftOffset += 15;
+
+    _ASSERT(___leftOffset > 0);
+    _ASSERT(___leftOffset % 15 == 0);
+
+    //-----------------------------------------------------------------
+
+    SCROLLINFO si{};
+    si.cbSize = sizeof(SCROLLINFO);
+    si.fMask = SIF_POS;
+    si.nPos = ___leftOffset;
+
+    SetScrollInfo(hwnd, 0, &si, TRUE);
+
+    //-----------------------------------------------------------------
+
+    InvalidateRect(hwnd, nullptr, TRUE);
+}
+
+//-----------------------------------------------------------------------------
+
+static
+void ChartWnd_OnHScroll_LineLeft(HWND hwnd)
+{
+    if(___leftOffset > 0)
+    {
+        ___leftOffset -= 15;
+
+        _ASSERT(___leftOffset >= 0);
+        _ASSERT(___leftOffset % 15 == 0);
+
+        //-----------------------------------------------------------------
+
+        SCROLLINFO si{};
+        si.cbSize = sizeof(SCROLLINFO);
+        si.fMask = SIF_POS;
+        si.nPos = ___leftOffset;
+
+        SetScrollInfo(hwnd, 0, &si, TRUE);
+
+        //-----------------------------------------------------------------
+
+        InvalidateRect(hwnd, nullptr, TRUE);
+    }
+}
+
+//-----------------------------------------------------------------------------
+
+static
+void ChartWnd_OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos)
+{
+    switch(code)
+    {
+    case SB_LINERIGHT:
+        ChartWnd_OnHScroll_LineRight(hwnd);
+        break;
+
+    case SB_LINELEFT:
+        ChartWnd_OnHScroll_LineLeft(hwnd);
+        break;
+
+    case SB_ENDSCROLL:
+        OutputDebugString(L"SB_ENDSCROLL\n");
+        break;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -254,7 +413,9 @@ LRESULT CALLBACK ChartWnd_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 {
     switch(msg)
     {
-        HANDLE_MSG(hwnd, WM_CREATE, ChartWnd_OnCreate);
+        HANDLE_MSG(hwnd, WM_HSCROLL, ChartWnd_OnHScroll);
+        HANDLE_MSG(hwnd, WM_CREATE , ChartWnd_OnCreate );
+        HANDLE_MSG(hwnd, WM_SIZE   , ChartWnd_OnSize   );
 
     case WM_PAINT:
     {

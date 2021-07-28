@@ -81,6 +81,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         return FALSE;
     }
 
+    //nCmdShow = SW_MAXIMIZE;
+
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
 
