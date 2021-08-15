@@ -277,7 +277,7 @@ BOOL ChartWnd_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
     PrepareData();
 
     //-------------------------------------------------------------------------
-
+/*
     SCROLLINFO si{};
     si.cbSize = sizeof(SCROLLINFO);
     si.fMask |= SIF_RANGE;
@@ -287,7 +287,7 @@ BOOL ChartWnd_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
     si.nPos = 0;
 
     SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-
+*/
     //-------------------------------------------------------------------------
 
     return TRUE;
@@ -311,14 +311,14 @@ void ChartWnd_OnSize(HWND hwnd, UINT state, const int cx, const int cy)
         ___windowChartRatio = ___windowHeight / ___chartHeight;
 
         //---------------------------------------------------------------------
-
+/*
         SCROLLINFO si{};
         si.cbSize = sizeof(SCROLLINFO);
         si.fMask = SIF_PAGE;
         si.nPage = cx;
 
         SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-
+*/
         //---------------------------------------------------------------------
 
         ___cxPrev = cx;
@@ -348,14 +348,14 @@ void ChartWnd_OnSize(HWND hwnd, UINT state, const int cx, const int cy)
         }
 
         //---------------------------------------------------------------------
-
+/*
         SCROLLINFO si{};
         si.cbSize = sizeof(SCROLLINFO);
         si.fMask = SIF_PAGE;
         si.nPage = cx;
 
         SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-
+*/
         //---------------------------------------------------------------------
 
         ___cxPrev = cx;
