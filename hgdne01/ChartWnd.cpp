@@ -277,7 +277,7 @@ BOOL ChartWnd_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
     PrepareData();
 
     //-------------------------------------------------------------------------
-
+/*
     SCROLLINFO si{};
     si.cbSize = sizeof(SCROLLINFO);
     si.fMask |= SIF_RANGE;
@@ -287,7 +287,7 @@ BOOL ChartWnd_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
     si.nPos = 0;
 
     SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-
+*/
     //-------------------------------------------------------------------------
 
     return TRUE;
@@ -311,14 +311,14 @@ void ChartWnd_OnSize(HWND hwnd, UINT state, const int cx, const int cy)
         ___windowChartRatio = ___windowHeight / ___chartHeight;
 
         //---------------------------------------------------------------------
-
+/*
         SCROLLINFO si{};
         si.cbSize = sizeof(SCROLLINFO);
         si.fMask = SIF_PAGE;
         si.nPage = cx;
 
         SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-
+*/
         //---------------------------------------------------------------------
 
         ___cxPrev = cx;
@@ -348,14 +348,14 @@ void ChartWnd_OnSize(HWND hwnd, UINT state, const int cx, const int cy)
         }
 
         //---------------------------------------------------------------------
-
+/*
         SCROLLINFO si{};
         si.cbSize = sizeof(SCROLLINFO);
         si.fMask = SIF_PAGE;
         si.nPage = cx;
 
         SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
-
+*/
         //---------------------------------------------------------------------
 
         ___cxPrev = cx;
@@ -604,15 +604,94 @@ void ChartWnd_OnHScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos)
     }
 }
 
+
+//-----------------------------------------------------------------------------
+
+static BOOL ___captured = FALSE;
+
+static int ___xPrev = 0;
+static int ___yPrev = 0;
+
+//-----------------------------------------------------------------------------
+
+static
+void ChartWnd_OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags)
+{
+    OutputDebugString(L"ChartWnd_OnLButtonDown\n");
+
+    //-------------------------------------------------------------------------
+
+    _ASSERT(!___captured);
+
+    SetCapture(hwnd);
+
+    ___captured = TRUE;
+
+    ___xPrev = x;
+    ___yPrev = y;
+}
+
+//-----------------------------------------------------------------------------
+
+static
+void ChartWnd_OnLButtonUp(HWND hwnd, int x, int y, UINT keyFlags)
+{
+    OutputDebugString(L"ChartWnd_OnLButtonUp\n");
+
+    //-------------------------------------------------------------------------
+
+    _ASSERT(___captured);
+
+    BOOL b = ReleaseCapture();
+    _ASSERT(b);
+
+    ___captured = FALSE;
+
+    //-------------------------------------------------------------------------
+}
+
+//-----------------------------------------------------------------------------
+
+static
+void ChartWnd_OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags)
+{
+    OutputDebugString(L"ChartWnd_OnMouseMove\n");
+
+    //-------------------------------------------------------------------------
+
+    if(___captured)
+    {
+        const int xMove = x - ___xPrev;
+        const int yMove = y - ___yPrev;
+
+        //---------------------------------------------------------------------
+
+        ___cxOffset -= xMove;
+
+        BOOL b = InvalidateRect(hwnd, NULL, TRUE);
+        _ASSERT(b);
+
+        //---------------------------------------------------------------------
+
+        ___xPrev = x;
+        ___yPrev = y;
+    }
+
+    //-------------------------------------------------------------------------
+}
+
 //-----------------------------------------------------------------------------
 
 LRESULT CALLBACK ChartWnd_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch(msg)
     {
-        HANDLE_MSG(hwnd, WM_HSCROLL, ChartWnd_OnHScroll);
-        HANDLE_MSG(hwnd, WM_CREATE , ChartWnd_OnCreate );
-        HANDLE_MSG(hwnd, WM_SIZE   , ChartWnd_OnSize   );
+        HANDLE_MSG(hwnd, WM_HSCROLL     , ChartWnd_OnHScroll    );
+        HANDLE_MSG(hwnd, WM_CREATE      , ChartWnd_OnCreate     );
+        HANDLE_MSG(hwnd, WM_SIZE        , ChartWnd_OnSize       );
+        HANDLE_MSG(hwnd, WM_LBUTTONDOWN , ChartWnd_OnLButtonDown);
+        HANDLE_MSG(hwnd, WM_LBUTTONUP   , ChartWnd_OnLButtonUp  );
+        HANDLE_MSG(hwnd, WM_MOUSEMOVE   , ChartWnd_OnMouseMove  );
 
     case WM_PAINT:
     {

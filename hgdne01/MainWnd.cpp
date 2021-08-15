@@ -52,8 +52,9 @@ BOOL MainWnd_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
         0
     ,   CHARTWND_CLASSNAME
     ,   nullptr
-    ,   WS_CHILD | WS_VISIBLE | WS_HSCROLL | WS_VSCROLL
-    ,   0, 0, rc.right, rc.bottom
+//  ,   WS_CHILD | WS_VISIBLE | WS_HSCROLL | WS_VSCROLL
+    ,   WS_CHILD | WS_VISIBLE
+        ,   0, 0, rc.right, rc.bottom
     ,   hwnd
     ,   nullptr
     ,   lpCreateStruct->hInstance

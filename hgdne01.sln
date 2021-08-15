@@ -5,6 +5,11 @@ VisualStudioVersion = 16.0.31321.278
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hgdne01", "hgdne01\hgdne01.vcxproj", "{1A63E395-F6E3-4A06-9EA2-6CE9AAE78195}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B2DE8E9B-DD92-41B6-A0C4-572C26F09AAA}"
+	ProjectSection(SolutionItems) = preProject
+		hgdne01.docx = hgdne01.docx
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
